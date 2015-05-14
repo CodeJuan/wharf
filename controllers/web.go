@@ -6,7 +6,7 @@ import (
 
 	"github.com/astaxie/beego"
 
-	"github.com/dockercn/wharf/models"
+	"github.com/containerops/wharf/models"
 	"github.com/shurcooL/go/github_flavored_markdown"
 )
 
