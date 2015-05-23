@@ -8,8 +8,8 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/satori/go.uuid"
 
-	"github.com/dockercn/wharf/models"
-	"github.com/dockercn/wharf/utils"
+	"github.com/containerops/wharf/models"
+	"github.com/containerops/wharf/utils"
 )
 
 type TeamWebV1Controller struct {
