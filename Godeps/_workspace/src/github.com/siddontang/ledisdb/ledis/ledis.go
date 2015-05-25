@@ -2,23 +2,26 @@ package ledis
 
 import (
 	"fmt"
-	"github.com/siddontang/go/filelock"
-	"github.com/siddontang/go/log"
-	"github.com/siddontang/ledisdb/config"
-	"github.com/siddontang/ledisdb/rpl"
-	"github.com/siddontang/ledisdb/store"
 	"io"
 	"os"
 	"path"
 	"sync"
 	"time"
+
+	"github.com/siddontang/go/filelock"
+	"github.com/siddontang/go/log"
+	"github.com/siddontang/ledisdb/config"
+	"github.com/siddontang/ledisdb/rpl"
+	"github.com/siddontang/ledisdb/store"
 )
 
 type Ledis struct {
 	cfg *config.Config
 
 	ldb *store.DB
-	dbs []*DB
+
+	dbLock sync.Mutex
+	dbs    map[int]*DB
 
 	quit chan struct{}
 	wg   sync.WaitGroup
@@ -35,7 +38,8 @@ type Ledis struct {
 
 	lock io.Closer
 
-	tcs []*ttlChecker
+	ttlCheckers  []*ttlChecker
+	ttlCheckerCh chan *ttlChecker
 }
 
 func Open(cfg *config.Config) (*Ledis, error) {
@@ -45,8 +49,8 @@ func Open(cfg *config.Config) (*Ledis, error) {
 
 	if cfg.Databases == 0 {
 		cfg.Databases = 16
-	} else if cfg.Databases > 256 {
-		cfg.Databases = 256
+	} else if cfg.Databases > MaxDatabases {
+		cfg.Databases = MaxDatabases
 	}
 
 	os.MkdirAll(cfg.DataDir, 0755)
@@ -84,10 +88,7 @@ func Open(cfg *config.Config) (*Ledis, error) {
 		l.r = nil
 	}
 
-	l.dbs = make([]*DB, cfg.Databases)
-	for i := 0; i < cfg.Databases; i++ {
-		l.dbs[i] = l.newDB(uint8(i))
-	}
+	l.dbs = make(map[int]*DB, 16)
 
 	l.checkTTL()
 
@@ -112,11 +113,26 @@ func (l *Ledis) Close() {
 }
 
 func (l *Ledis) Select(index int) (*DB, error) {
-	if index < 0 || index >= len(l.dbs) {
-		return nil, fmt.Errorf("invalid db index %d, must in [0, %d]", index, len(l.dbs)-1)
+	if index < 0 || index >= l.cfg.Databases {
+		return nil, fmt.Errorf("invalid db index %d, must in [0, %d]", index, l.cfg.Databases-1)
 	}
 
-	return l.dbs[index], nil
+	l.dbLock.Lock()
+	defer l.dbLock.Unlock()
+
+	db, ok := l.dbs[index]
+	if ok {
+		return db, nil
+	}
+
+	db = l.newDB(index)
+	l.dbs[index] = db
+
+	go func(db *DB) {
+		l.ttlCheckerCh <- db.ttlChecker
+	}(db)
+
+	return db, nil
 }
 
 // Flush All will clear all data and replication logs
@@ -130,6 +146,8 @@ func (l *Ledis) FlushAll() error {
 func (l *Ledis) flushAll() error {
 	it := l.ldb.NewIterator()
 	defer it.Close()
+
+	it.SeekToFirst()
 
 	w := l.ldb.NewWriteBatch()
 	defer w.Rollback()
@@ -174,19 +192,8 @@ func (l *Ledis) IsReadOnly() bool {
 }
 
 func (l *Ledis) checkTTL() {
-	l.tcs = make([]*ttlChecker, len(l.dbs))
-	for i, db := range l.dbs {
-		c := newTTLChecker(db)
-
-		c.register(KVType, db.kvBatch, db.delete)
-		c.register(ListType, db.listBatch, db.lDelete)
-		c.register(HashType, db.hashBatch, db.hDelete)
-		c.register(ZSetType, db.zsetBatch, db.zDelete)
-		//		c.register(BitType, db.binBatch, db.bDelete)
-		c.register(SetType, db.setBatch, db.sDelete)
-
-		l.tcs[i] = c
-	}
+	l.ttlCheckers = make([]*ttlChecker, 0, 16)
+	l.ttlCheckerCh = make(chan *ttlChecker, 16)
 
 	if l.cfg.TTLCheckInterval == 0 {
 		l.cfg.TTLCheckInterval = 1
@@ -206,9 +213,12 @@ func (l *Ledis) checkTTL() {
 					break
 				}
 
-				for _, c := range l.tcs {
+				for _, c := range l.ttlCheckers {
 					c.check()
 				}
+			case c := <-l.ttlCheckerCh:
+				l.ttlCheckers = append(l.ttlCheckers, c)
+				c.check()
 			case <-l.quit:
 				return
 			}
@@ -220,4 +230,11 @@ func (l *Ledis) checkTTL() {
 
 func (l *Ledis) StoreStat() *store.Stat {
 	return l.ldb.Stat()
+}
+
+func (l *Ledis) CompactStore() error {
+	l.wLock.Lock()
+	defer l.wLock.Unlock()
+
+	return l.ldb.Compact()
 }

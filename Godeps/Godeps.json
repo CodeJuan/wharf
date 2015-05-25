@@ -1,11 +1,11 @@
 {
-	"ImportPath": "github.com/magicshui/wharf",
-	"GoVersion": "go1.4",
+	"ImportPath": "github.com/containerops/wharf",
+	"GoVersion": "go1.4.2",
 	"Deps": [
 		{
 			"ImportPath": "github.com/BurntSushi/toml",
-			"Comment": "v0.1.0-18-g443a628",
-			"Rev": "443a628bc233f634a75bcbdd71fe5350789f1afa"
+			"Comment": "v0.1.0-21-g056c9bc",
+			"Rev": "056c9bc7be7190eaa7715723883caffa5f8fa3e4"
 		},
 		{
 			"ImportPath": "github.com/astaxie/beego",
@@ -14,119 +14,130 @@
 		},
 		{
 			"ImportPath": "github.com/boltdb/bolt",
-			"Comment": "v1.0-43-gcf33c9e",
-			"Rev": "cf33c9e0ca0a23509b8bb8edfc63e4776bb1a330"
+			"Comment": "v1.0-79-g2c04100",
+			"Rev": "2c04100eb9793f2b8541d243494e2909d2112325"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-74-g50c77ec",
-			"Rev": "50c77ecec0068c9aef9d90ae0fd0fdf410041da3"
+			"Comment": "1.2.0-107-g942282e",
+			"Rev": "942282e931e8286aa802a30b01fa7e16befb50f3"
 		},
 		{
 			"ImportPath": "github.com/cupcake/rdb",
 			"Rev": "3454dcabd33cb8ea8261ffd6a45f4d836eb504cc"
 		},
 		{
-			"ImportPath": "github.com/dockercn/wharf/cmd",
-			"Comment": "0.0.3-41-ga73fc79",
-			"Rev": "a73fc79fc1401e3de1e4afd870886e25a34dec7d"
-		},
-		{
-			"ImportPath": "github.com/dockercn/wharf/controllers",
-			"Comment": "0.0.3-41-ga73fc79",
-			"Rev": "a73fc79fc1401e3de1e4afd870886e25a34dec7d"
-		},
-		{
-			"ImportPath": "github.com/dockercn/wharf/models",
-			"Comment": "0.0.3-41-ga73fc79",
-			"Rev": "a73fc79fc1401e3de1e4afd870886e25a34dec7d"
-		},
-		{
-			"ImportPath": "github.com/dockercn/wharf/modules",
-			"Comment": "0.0.3-41-ga73fc79",
-			"Rev": "a73fc79fc1401e3de1e4afd870886e25a34dec7d"
-		},
-		{
-			"ImportPath": "github.com/dockercn/wharf/routers",
-			"Comment": "0.0.3-41-ga73fc79",
-			"Rev": "a73fc79fc1401e3de1e4afd870886e25a34dec7d"
-		},
-		{
-			"ImportPath": "github.com/dockercn/wharf/utils",
-			"Comment": "0.0.3-41-ga73fc79",
-			"Rev": "a73fc79fc1401e3de1e4afd870886e25a34dec7d"
-		},
-		{
 			"ImportPath": "github.com/edsrzf/mmap-go",
 			"Rev": "6c75090c55983bef2e129e173681b20d24871ef8"
 		},
 		{
+			"ImportPath": "github.com/microcosm-cc/bluemonday",
+			"Rev": "fcd0f5074e55df204568c7419509fb59ddcad228"
+		},
+		{
 			"ImportPath": "github.com/nfnt/resize",
-			"Rev": "8f4493144849aa7855fc525f5953c439180e6f25"
+			"Rev": "f2d1b73023c55bdfb4fa2ed385d2bec95bce3692"
+		},
+		{
+			"ImportPath": "github.com/russross/blackfriday",
+			"Comment": "v1.2-69-g4bed88b",
+			"Rev": "4bed88b4fd00fbb66b49b0f38ed3dd0b902ab515"
 		},
 		{
 			"ImportPath": "github.com/satori/go.uuid",
-			"Rev": "242673bbc820e051ef00033e274d32e08ece9e15"
+			"Rev": "7c7f2020c4c9491594b85767967f4619c2fa75f9"
+		},
+		{
+			"ImportPath": "github.com/sergi/go-diff/diffmatchpatch",
+			"Rev": "a166935efdfa3674993550ee58c66e9a29f9c2c9"
+		},
+		{
+			"ImportPath": "github.com/shurcooL/go/github_flavored_markdown",
+			"Rev": "ae0de680c94b054bab0b77913adbae896590900a"
+		},
+		{
+			"ImportPath": "github.com/shurcooL/highlight_diff",
+			"Rev": "519e2ed2db2d778947eeba2b1ffa2ea7cec4dd88"
+		},
+		{
+			"ImportPath": "github.com/shurcooL/highlight_go",
+			"Rev": "ad683411d16a50b9bdc066354f87984ac75553bd"
+		},
+		{
+			"ImportPath": "github.com/shurcooL/sanitized_anchor_name",
+			"Rev": "11a20b799bf22a02808c862eb6ca09f7fb38f84a"
 		},
 		{
 			"ImportPath": "github.com/siddontang/go/filelock",
-			"Rev": "dfa1fad4a1037a0b591127a00a4f337762cb5646"
+			"Rev": "b151716326d7c7faf22473c0b04fb7ceac88b587"
 		},
 		{
 			"ImportPath": "github.com/siddontang/go/hack",
-			"Rev": "dfa1fad4a1037a0b591127a00a4f337762cb5646"
+			"Rev": "b151716326d7c7faf22473c0b04fb7ceac88b587"
 		},
 		{
 			"ImportPath": "github.com/siddontang/go/ioutil2",
-			"Rev": "dfa1fad4a1037a0b591127a00a4f337762cb5646"
+			"Rev": "b151716326d7c7faf22473c0b04fb7ceac88b587"
 		},
 		{
 			"ImportPath": "github.com/siddontang/go/log",
-			"Rev": "dfa1fad4a1037a0b591127a00a4f337762cb5646"
+			"Rev": "b151716326d7c7faf22473c0b04fb7ceac88b587"
 		},
 		{
 			"ImportPath": "github.com/siddontang/go/num",
-			"Rev": "dfa1fad4a1037a0b591127a00a4f337762cb5646"
+			"Rev": "b151716326d7c7faf22473c0b04fb7ceac88b587"
 		},
 		{
 			"ImportPath": "github.com/siddontang/go/snappy",
-			"Rev": "dfa1fad4a1037a0b591127a00a4f337762cb5646"
+			"Rev": "b151716326d7c7faf22473c0b04fb7ceac88b587"
 		},
 		{
 			"ImportPath": "github.com/siddontang/go/sync2",
-			"Rev": "dfa1fad4a1037a0b591127a00a4f337762cb5646"
+			"Rev": "b151716326d7c7faf22473c0b04fb7ceac88b587"
 		},
 		{
 			"ImportPath": "github.com/siddontang/ledisdb/config",
-			"Comment": "v0.4-61-gb9d10ac",
-			"Rev": "b9d10ace23473afc6390b96f73a72ff16fc401b6"
+			"Comment": "v0.5-11-gc80cda8",
+			"Rev": "c80cda80d8a6b8a36dffcab63449ac5fd12adfac"
 		},
 		{
 			"ImportPath": "github.com/siddontang/ledisdb/ledis",
-			"Comment": "v0.4-61-gb9d10ac",
-			"Rev": "b9d10ace23473afc6390b96f73a72ff16fc401b6"
+			"Comment": "v0.5-11-gc80cda8",
+			"Rev": "c80cda80d8a6b8a36dffcab63449ac5fd12adfac"
 		},
 		{
 			"ImportPath": "github.com/siddontang/ledisdb/rpl",
-			"Comment": "v0.4-61-gb9d10ac",
-			"Rev": "b9d10ace23473afc6390b96f73a72ff16fc401b6"
+			"Comment": "v0.5-11-gc80cda8",
+			"Rev": "c80cda80d8a6b8a36dffcab63449ac5fd12adfac"
 		},
 		{
 			"ImportPath": "github.com/siddontang/ledisdb/store",
-			"Comment": "v0.4-61-gb9d10ac",
-			"Rev": "b9d10ace23473afc6390b96f73a72ff16fc401b6"
+			"Comment": "v0.5-11-gc80cda8",
+			"Rev": "c80cda80d8a6b8a36dffcab63449ac5fd12adfac"
+		},
+		{
+			"ImportPath": "github.com/siddontang/rdb",
+			"Rev": "fc89ed2e418d27e3ea76e708e54276d2b44ae9cf"
+		},
+		{
+			"ImportPath": "github.com/sourcegraph/annotate",
+			"Rev": "35fbe2df7c605a08bcd5d1cb66e7b794a247decd"
+		},
+		{
+			"ImportPath": "github.com/sourcegraph/syntaxhighlight",
+			"Rev": "637a8b8b94eca8bb8cd559b950cc4f42629ec137"
 		},
 		{
 			"ImportPath": "github.com/syndtr/goleveldb/leveldb",
-			"Rev": "e3f32eb300aa1e514fe8ba58d008da90a062273d"
+			"Rev": "315fcfb05d4d46d4354b313d146ef688dda272a9"
 		},
 		{
 			"ImportPath": "github.com/syndtr/gosnappy/snappy",
 			"Rev": "156a073208e131d7d2e212cb749feae7c339e846"
 		},
 		{
-			"ImportPath": "github.com/szferi/gomdb",
-			"Rev": "6bcb5a8059f9655a259774650dbe0cad422767a3"
+			"ImportPath": "golang.org/x/net/html",
+			"Rev": "5aa7325eaa14d7ed4b520f40d58adf2834c8de01"
 		}
 	]
 }

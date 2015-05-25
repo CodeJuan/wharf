@@ -3,11 +3,12 @@ package config
 import (
 	"bytes"
 	"errors"
-	"github.com/BurntSushi/toml"
-	"github.com/siddontang/go/ioutil2"
 	"io"
 	"io/ioutil"
 	"sync"
+
+	"github.com/BurntSushi/toml"
+	"github.com/siddontang/go/ioutil2"
 )
 
 var (
@@ -214,10 +215,7 @@ func (cfg *Config) adjust() {
 	cfg.ConnReadBufferSize = getDefault(4*KB, cfg.ConnReadBufferSize)
 	cfg.ConnWriteBufferSize = getDefault(4*KB, cfg.ConnWriteBufferSize)
 	cfg.TTLCheckInterval = getDefault(1, cfg.TTLCheckInterval)
-	cfg.Databases = getDefault(0, cfg.Databases)
-	if cfg.Databases > 256 {
-		cfg.Databases = 256
-	}
+	cfg.Databases = getDefault(16, cfg.Databases)
 }
 
 func (cfg *LevelDBConfig) adjust() {

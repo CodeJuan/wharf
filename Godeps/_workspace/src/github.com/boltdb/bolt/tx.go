@@ -127,7 +127,8 @@ func (tx *Tx) OnCommit(fn func()) {
 }
 
 // Commit writes all changes to disk and updates the meta page.
-// Returns an error if a disk write error occurs.
+// Returns an error if a disk write error occurs, or if Commit is
+// called on a read-only transaction.
 func (tx *Tx) Commit() error {
 	_assert(!tx.managed, "managed tx commit not allowed")
 	if tx.db == nil {
@@ -203,7 +204,8 @@ func (tx *Tx) Commit() error {
 	return nil
 }
 
-// Rollback closes the transaction and ignores all previous updates.
+// Rollback closes the transaction and ignores all previous updates. Read-only
+// transactions must be rolled back and not committed.
 func (tx *Tx) Rollback() error {
 	_assert(!tx.managed, "managed tx rollback not allowed")
 	if tx.db == nil {
@@ -252,37 +254,42 @@ func (tx *Tx) close() {
 }
 
 // Copy writes the entire database to a writer.
-// A reader transaction is maintained during the copy so it is safe to continue
-// using the database while a copy is in progress.
-// Copy will write exactly tx.Size() bytes into the writer.
+// This function exists for backwards compatibility. Use WriteTo() in
 func (tx *Tx) Copy(w io.Writer) error {
-	var f *os.File
-	var err error
+	_, err := tx.WriteTo(w)
+	return err
+}
 
+// WriteTo writes the entire database to a writer.
+// If err == nil then exactly tx.Size() bytes will be written into the writer.
+func (tx *Tx) WriteTo(w io.Writer) (n int64, err error) {
 	// Attempt to open reader directly.
+	var f *os.File
 	if f, err = os.OpenFile(tx.db.path, os.O_RDONLY|odirect, 0); err != nil {
 		// Fallback to a regular open if that doesn't work.
 		if f, err = os.OpenFile(tx.db.path, os.O_RDONLY, 0); err != nil {
-			return err
+			return 0, err
 		}
 	}
 
 	// Copy the meta pages.
 	tx.db.metalock.Lock()
-	_, err = io.CopyN(w, f, int64(tx.db.pageSize*2))
+	n, err = io.CopyN(w, f, int64(tx.db.pageSize*2))
 	tx.db.metalock.Unlock()
 	if err != nil {
 		_ = f.Close()
-		return fmt.Errorf("meta copy: %s", err)
+		return n, fmt.Errorf("meta copy: %s", err)
 	}
 
 	// Copy data pages.
-	if _, err := io.CopyN(w, f, tx.Size()-int64(tx.db.pageSize*2)); err != nil {
+	wn, err := io.CopyN(w, f, tx.Size()-int64(tx.db.pageSize*2))
+	n += wn
+	if err != nil {
 		_ = f.Close()
-		return err
+		return n, err
 	}
 
-	return f.Close()
+	return n, f.Close()
 }
 
 // CopyFile copies the entire database to file at the given path.

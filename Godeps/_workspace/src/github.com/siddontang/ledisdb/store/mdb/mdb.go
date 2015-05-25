@@ -1,12 +1,13 @@
-// +build !windows
+// +build lmdb
 
 package mdb
 
 import (
+	"os"
+
 	"github.com/siddontang/ledisdb/config"
 	"github.com/siddontang/ledisdb/store/driver"
-	mdb "github.com/szferi/gomdb"
-	"os"
+	mdb "github.com/siddontang/ledisdb/vendor/gomdb"
 )
 
 type Store struct {

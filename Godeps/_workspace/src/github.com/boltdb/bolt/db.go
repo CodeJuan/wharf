@@ -27,6 +27,12 @@ const magic uint32 = 0xED0CDAED
 // must be synchronzied using the msync(2) syscall.
 const IgnoreNoSync = runtime.GOOS == "openbsd"
 
+// Default values if not set in a DB instance.
+const (
+	DefaultMaxBatchSize  int = 1000
+	DefaultMaxBatchDelay     = 10 * time.Millisecond
+)
+
 // DB represents a collection of buckets persisted to a file on disk.
 // All data access is performed through transactions which can be obtained through the DB.
 // All the functions on DB will return a ErrDatabaseNotOpen if accessed before Open() is called.
@@ -49,9 +55,33 @@ type DB struct {
 	// THIS IS UNSAFE. PLEASE USE WITH CAUTION.
 	NoSync bool
 
+	// When true, skips the truncate call when growing the database.
+	// Setting this to true is only safe on non-ext3/ext4 systems.
+	// Skipping truncation avoids preallocation of hard drive space and
+	// bypasses a truncate() and fsync() syscall on remapping.
+	//
+	// https://github.com/boltdb/bolt/issues/284
+	NoGrowSync bool
+
+	// MaxBatchSize is the maximum size of a batch. Default value is
+	// copied from DefaultMaxBatchSize in Open.
+	//
+	// If <=0, disables batching.
+	//
+	// Do not change concurrently with calls to Batch.
+	MaxBatchSize int
+
+	// MaxBatchDelay is the maximum delay before a batch starts.
+	// Default value is copied from DefaultMaxBatchDelay in Open.
+	//
+	// If <=0, effectively disables batching.
+	//
+	// Do not change concurrently with calls to Batch.
+	MaxBatchDelay time.Duration
+
 	path     string
 	file     *os.File
-	dataref  []byte
+	dataref  []byte // mmap'ed readonly, write throws SEGV
 	data     *[maxMapSize]byte
 	datasz   int
 	meta0    *meta
@@ -62,6 +92,9 @@ type DB struct {
 	txs      []*Tx
 	freelist *freelist
 	stats    Stats
+
+	batchMu sync.Mutex
+	batch   *batch
 
 	rwlock   sync.Mutex   // Allows only one writer at a time.
 	metalock sync.Mutex   // Protects meta page access.
@@ -98,6 +131,11 @@ func Open(path string, mode os.FileMode, options *Options) (*DB, error) {
 	if options == nil {
 		options = DefaultOptions
 	}
+	db.NoGrowSync = options.NoGrowSync
+
+	// Set default values for later DB operations.
+	db.MaxBatchSize = DefaultMaxBatchSize
+	db.MaxBatchDelay = DefaultMaxBatchDelay
 
 	// Open data file and separate sync handler for metadata writes.
 	db.path = path
@@ -215,7 +253,7 @@ func (db *DB) munmap() error {
 }
 
 // mmapSize determines the appropriate size for the mmap given the current size
-// of the database. The minimum size is 4MB and doubles until it reaches 1GB.
+// of the database. The minimum size is 1MB and doubles until it reaches 1GB.
 // Returns an error if the new mmap size is greater than the max allowed.
 func (db *DB) mmapSize(size int) (int, error) {
 	// Double the size from 1MB until 1GB.
@@ -518,6 +556,12 @@ func (db *DB) View(fn func(*Tx) error) error {
 	return nil
 }
 
+// Sync executes fdatasync() against the database file handle.
+//
+// This is not necessary under normal operation, however, if you use NoSync
+// then it allows you to force the database file to sync against the disk.
+func (db *DB) Sync() error { return fdatasync(db) }
+
 // Stats retrieves ongoing performance stats for the database.
 // This is only updated when a transaction closes.
 func (db *DB) Stats() Stats {
@@ -584,12 +628,16 @@ type Options struct {
 	// When set to zero it will wait indefinitely. This option is only
 	// available on Darwin and Linux.
 	Timeout time.Duration
+
+	// Sets the DB.NoGrowSync flag before memory mapping the file.
+	NoGrowSync bool
 }
 
 // DefaultOptions represent the options used if nil options are passed into Open().
 // No timeout is used which will cause Bolt to wait indefinitely for a lock.
 var DefaultOptions = &Options{
-	Timeout: 0,
+	Timeout:    0,
+	NoGrowSync: false,
 }
 
 // Stats represents statistics about the database.

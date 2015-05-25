@@ -4,10 +4,12 @@ import (
 	"container/list"
 	"encoding/binary"
 	"errors"
-	"github.com/siddontang/go/hack"
-	"github.com/siddontang/ledisdb/store"
 	"sync"
 	"time"
+
+	"github.com/siddontang/go/hack"
+	"github.com/siddontang/go/log"
+	"github.com/siddontang/ledisdb/store"
 )
 
 const (
@@ -24,28 +26,34 @@ var errListKey = errors.New("invalid list key")
 var errListSeq = errors.New("invalid list sequence, overflow")
 
 func (db *DB) lEncodeMetaKey(key []byte) []byte {
-	buf := make([]byte, len(key)+2)
-	buf[0] = db.index
-	buf[1] = LMetaType
+	buf := make([]byte, len(key)+1+len(db.indexVarBuf))
+	pos := copy(buf, db.indexVarBuf)
+	buf[pos] = LMetaType
+	pos++
 
-	copy(buf[2:], key)
+	copy(buf[pos:], key)
 	return buf
 }
 
 func (db *DB) lDecodeMetaKey(ek []byte) ([]byte, error) {
-	if len(ek) < 2 || ek[0] != db.index || ek[1] != LMetaType {
+	pos, err := db.checkKeyIndex(ek)
+	if err != nil {
+		return nil, err
+	}
+
+	if pos+1 > len(ek) || ek[pos] != LMetaType {
 		return nil, errLMetaKey
 	}
 
-	return ek[2:], nil
+	pos++
+	return ek[pos:], nil
 }
 
 func (db *DB) lEncodeListKey(key []byte, seq int32) []byte {
-	buf := make([]byte, len(key)+8)
+	buf := make([]byte, len(key)+7+len(db.indexVarBuf))
 
-	pos := 0
-	buf[pos] = db.index
-	pos++
+	pos := copy(buf, db.indexVarBuf)
+
 	buf[pos] = ListType
 	pos++
 
@@ -61,19 +69,33 @@ func (db *DB) lEncodeListKey(key []byte, seq int32) []byte {
 }
 
 func (db *DB) lDecodeListKey(ek []byte) (key []byte, seq int32, err error) {
-	if len(ek) < 8 || ek[0] != db.index || ek[1] != ListType {
+	pos := 0
+	pos, err = db.checkKeyIndex(ek)
+	if err != nil {
+		return
+	}
+
+	if pos+1 > len(ek) || ek[pos] != ListType {
 		err = errListKey
 		return
 	}
 
-	keyLen := int(binary.BigEndian.Uint16(ek[2:]))
-	if keyLen+8 != len(ek) {
+	pos++
+
+	if pos+2 > len(ek) {
 		err = errListKey
 		return
 	}
 
-	key = ek[4 : 4+keyLen]
-	seq = int32(binary.BigEndian.Uint32(ek[4+keyLen:]))
+	keyLen := int(binary.BigEndian.Uint16(ek[pos:]))
+	pos += 2
+	if keyLen+pos+4 != len(ek) {
+		err = errListKey
+		return
+	}
+
+	key = ek[pos : pos+keyLen]
+	seq = int32(binary.BigEndian.Uint32(ek[pos+keyLen:]))
 	return
 }
 
@@ -153,12 +175,15 @@ func (db *DB) lpop(key []byte, whereSeq int32) ([]byte, error) {
 
 	var headSeq int32
 	var tailSeq int32
+	var size int32
 	var err error
 
 	metaKey := db.lEncodeMetaKey(key)
-	headSeq, tailSeq, _, err = db.lGetMeta(nil, metaKey)
+	headSeq, tailSeq, size, err = db.lGetMeta(nil, metaKey)
 	if err != nil {
 		return nil, err
+	} else if size == 0 {
+		return nil, nil
 	}
 
 	var value []byte
@@ -181,9 +206,9 @@ func (db *DB) lpop(key []byte, whereSeq int32) ([]byte, error) {
 	}
 
 	t.Delete(itemKey)
-	size := db.lSetMeta(metaKey, headSeq, tailSeq)
+	size = db.lSetMeta(metaKey, headSeq, tailSeq)
 	if size == 0 {
-		db.rmExpire(t, HashType, key)
+		db.rmExpire(t, ListType, key)
 	}
 
 	err = t.Commit()
@@ -250,6 +275,7 @@ func (db *DB) lSetMeta(ek []byte, headSeq int32, tailSeq int32) int32 {
 	var size int32 = tailSeq - headSeq + 1
 	if size < 0 {
 		//	todo : log error + panic
+		log.Fatalf("invalid meta sequence range [%d, %d]", headSeq, tailSeq)
 	} else if size == 0 {
 		t.Delete(ek)
 	} else {
@@ -521,11 +547,8 @@ func (db *DB) lblockPop(keys [][]byte, whereSeq int32, timeout time.Duration) ([
 		} else if v != nil {
 			return []interface{}{key, v}, nil
 		} else {
-			if db.IsAutoCommit() {
-				//block wait can not be supported in transaction and multi
-				db.lbkeys.wait(key, ch)
-				bkeys = append(bkeys, key)
-			}
+			db.lbkeys.wait(key, ch)
+			bkeys = append(bkeys, key)
 		}
 	}
 	if len(bkeys) == 0 {
@@ -575,12 +598,6 @@ func (db *DB) lblockPop(keys [][]byte, whereSeq int32, timeout time.Duration) ([
 }
 
 func (db *DB) lSignalAsReady(key []byte, num int) {
-	if db.status == DBInTransaction {
-		//for transaction, only data can be pushed after tx commit and it is hard to signal
-		//so we don't handle it now
-		return
-	}
-
 	db.lbkeys.signal(key, num)
 }
 
