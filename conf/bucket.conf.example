@@ -1,0 +1,33 @@
+runmode = dev
+
+enablehttptls = true
+httpsport = 443
+httpcertfile = cert/containerops.me/containerops.me.crt
+httpkeyfile = cert/containerops.me/containerops.me.key
+
+gravatar = data/gravatar
+
+[docker]
+BasePath = /tmp/registry
+StaticPath = files
+Endpoints = containerops.me
+Version = 0.9.0
+Config = prod
+Standalone = true
+Encrypt = false
+API = v1
+
+[ledisdb]
+DataDir = /tmp/ledisdb
+DB = 8
+
+[log]
+FilePath = /tmp
+FileName = containerops-log
+
+[session]
+Provider = ledis
+SavePath = /tmp/session
+
+[domain]
+Domain = containerops.me
